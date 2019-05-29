@@ -81,7 +81,8 @@
         </tstamp>
 
         <buildnumber />
-        <property name="version-number" value="${major-version-number}.b${build.number}" />
+        
+        <property name="version-number" value="${major-version-number}-build_${build.number}" />
         
         <manifest file="MANIFEST.MF">
             <attribute name="Bundle-Name" value="${application.title}" />           

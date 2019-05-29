@@ -3,9 +3,9 @@ Ant-Version: Apache Ant 1.10.4
 Created-By: 1.8.0_121-b13 (Oracle Corporation)
 Bundle-Name: SecureMemoryPassword
 Bundle-Version: v1.0.0
-Bundle-Date: 2019-05-29 18:08:11 CEST
+Bundle-Date: 2019-05-29 18:14:09 CEST
 Application-Title: SecureMemoryPassword
 Application-Vendor: utente
-Implementation-Version: 3
+Implementation-Version: 7
 Application-URL: https://www.example.com
 
