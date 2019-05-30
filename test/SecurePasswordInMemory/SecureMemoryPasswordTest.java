@@ -15,8 +15,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertEquals;
@@ -184,8 +188,8 @@ public class SecureMemoryPasswordTest {
             System.out.println("test: " + String.valueOf(i));
         }
     }
-    
-        @Test
+
+    @Test
     public void testSerialization() {
         try {
             SecureMemoryPassword memoryPassword = new SecureMemoryPassword();
@@ -220,101 +224,162 @@ public class SecureMemoryPasswordTest {
 
     }
 
+//Testa i metodi privati con le reflections
+    @Test
+    public void testShufflePositions() {
+        
+        prepareTestingPrivateMethod_Shuffle();
+        
+        int numGenBuffer=10000;     // Genero questo numero di volte il buffer
+        
+        // Genero varie volte lo shuffle buffer e lo testo per vedere se resta coerente
+        for (int i = 0; i < numGenBuffer; i++) {
+            boolean retval = checkShufflePositions();
+            assertEquals(true, retval);
+        }
+    }
 
-    // Da fare con le refrections 
-//    @Test
-//    public void testShufflePositions() {
-//        SecureMemoryPassword memoryPassword = new SecureMemoryPassword();
-//        for (int i = 0; i < 10000; i++) {
-//            assertEquals(true, memoryPassword.DEBUGShufflePositions());
-//        }
-//    }
-//
-//    //@Test
-//    public void testShufflePositionsdDistribution() {
-//        SecureMemoryPassword memoryPassword = new SecureMemoryPassword();
-//
-//        // Tabella delle frequenze
-//        int[][] intValues = new int[2048][2048]; // Non parametrico, conosco la dimensione del buffer interno ATTENZIONE!!!
-//        int[] valuesTemp;
-//        for (int i = 0; i < 100000; i++) {
-//            valuesTemp = memoryPassword.DEBUGShufflePositionsDistribution();
-//            for (int j = 0; j < valuesTemp.length; j++) {
-//                intValues[valuesTemp[j]][j]++;
-//            }
-//        }
-//
-//        // Sfrutto il fatto che la matrice è quadrata. ATTENZIONE
-//        for (int i = 0; i < intValues.length; i++) {
-//            int counterZero = 0;
-//            int max = 0;
-//            int min = Integer.MAX_VALUE;
-//            for (int j = 0; j < intValues.length; j++) {
-//                if (intValues[i][j] == 0) {
-//                    //System.out.println(String.format("il valore %d non compare nelle seguenti posizioni %d", i,j));
-//                    counterZero++;
-//                }
-//                if (intValues[i][j] > max) {
-//                    max = intValues[i][j];
-//                }
-//                if (intValues[i][j] > 0 && intValues[i][j] < min) {
-//                    min = intValues[i][j];
-//                }
-//                //System.out.print(intValue[j]);
-//            }
-//            System.out.println(String.format("il valore %d non compare %d volte, max: %d min: %d", i, counterZero, max, min));
-//
-//        }
-//    }
+    @Test
+    public void testShufflePositionsdDistribution() {
+        
+        prepareTestingPrivateMethod_Shuffle();
 
+        int numGenBuffer=100000; // Genero questo numero di volte il buffer
 
-    // Non dovrebbe compilare per cui commento la sezione
-//    @Test
-//    public void testSubclass(){
-//        TestSubClass testSubClass = new TestSubClass();
-//        testSubClass.aritest();
-//    }
+        // Tabella delle frequenze
+        int[][] intValues = new int[2048][2048]; // Non parametrico, conosco la dimensione del buffer interno ATTENZIONE!!!
+        int[] valuesTemp;
+        
+        for (int i = 0; i < numGenBuffer; i++) {
+            shufflePositionsMethod();
+            valuesTemp = Arrays.copyOf(shufflePositions, shufflePositions.length);
+            //valuesTemp = DEBUGShufflePositionsDistribution();
+            for (int j = 0; j < valuesTemp.length; j++) {
+                intValues[valuesTemp[j]][j]++;
+            }
+        }
+
+        // Sfrutto il fatto che la matrice è quadrata. ATTENZIONE IN CASO SI CAMBI
+        for (int i = 0; i < intValues.length; i++) {
+            int counterZero = 0;
+            int max = 0;
+            int min = Integer.MAX_VALUE;
+            for (int j = 0; j < intValues.length; j++) {
+                if (intValues[i][j] == 0) {
+                    //System.out.println(String.format("il valore %d non compare nelle seguenti posizioni %d", i,j));
+                    counterZero++;
+                }
+                if (intValues[i][j] > max) {
+                    max = intValues[i][j];
+                }
+                if (intValues[i][j] > 0 && intValues[i][j] < min) {
+                    min = intValues[i][j];
+                }
+                //System.out.print(intValue[j]);
+            }
+            System.out.println(String.format("il valore %d non compare %d volte, max: %d min: %d", i, counterZero, max, min));
+
+        }
+    }
+
     
-    
-    
+    ////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////                      /////////////////////////////////
+    ////////////////////////////////// REFLECTIONS UTILITY /////////////////////////////////
+    //////////////////////////////////                      /////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////
+        
+    SecureMemoryPassword memoryPassword;
+    Method shufflePositionsMethod;
+    Field privateShufflePositions;
+    int[] shufflePositions;
+
+    /**
+     * Metodo di comodo per accedere al metodo privato della classe
+     */
+    private void shufflePositionsMethod() {
+        try {
+            shufflePositionsMethod.invoke(memoryPassword, null);
+            shufflePositions = (int[]) privateShufflePositions.get(memoryPassword);
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvocationTargetException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * Preparo tutto per accedere ai metodi e alle strutture private della classe da testare
+     */
+    private void prepareTestingPrivateMethod_Shuffle() {
+        try {
+            memoryPassword = new SecureMemoryPassword();
+
+            // Accesso a campi privati
+            privateShufflePositions = SecureMemoryPassword.class.getDeclaredField("shufflePositions");
+            privateShufflePositions.setAccessible(true);
+            shufflePositions = (int[]) privateShufflePositions.get(memoryPassword);
+
+            // Acceso a metodi privati
+//            Method[] methods = SecureMemoryPassword.class.getDeclaredMethods();
+            shufflePositionsMethod = SecureMemoryPassword.class.getDeclaredMethod("shufflePositions", (Class<?>[]) null);
+            shufflePositionsMethod.setAccessible(true);
+            //shufflePositionsMethod.invoke(memoryPassword, null);
+
+            //shufflePositions = (int[]) privateShufflePositions.get(memoryPassword);
+        } catch (NoSuchFieldException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SecurityException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchMethodException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(SecureMemoryPasswordTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+    }
+
 //    /**
 //     * Metodo per testare il corretto shuffling dell'array Da spostare nell
 //     * classe di test ed usare reflections
 //     *
 //     * @return true se il test ha avuto successo, false altrimenti
 //     */
-//    public boolean DEBUGShufflePositions() {
-//        shufflePositions();
-////        for (int i = 0; i < shufflePositions.length; i++) {
-////            System.out.println(String.valueOf(shufflePositions[i]));
-////        }
-//        int[] valuesTemp = Arrays.copyOf(shufflePositions, shufflePositions.length);
-////        valuesTemp[5]=12; // test del test 
-////        valuesTemp[51]=12;
-//        Arrays.sort(valuesTemp);
-//        int precval = valuesTemp[0];
-//        // Riordino i valori, se la dimensione è diversa ottengo un'eccezione
-//        // se la differenza tra un valore ed il successivo è diverso da 1 allora ho saltato qualcosa e ritorno false
-//        for (int i = 1; i < shufflePositions.length; i++) {
-//            if ((valuesTemp[i] - precval) != 1) {
-//                return false;
-//            }
-//            precval = valuesTemp[i];
+    private boolean checkShufflePositions() {
+        shufflePositionsMethod();
+//        for (int i = 0; i < shufflePositions.length; i++) {
+//            System.out.println(String.valueOf(shufflePositions[i]));
 //        }
-//        return true;
-//    }
-//
+        int[] valuesTemp = Arrays.copyOf(shufflePositions, shufflePositions.length);
+
+        Arrays.sort(valuesTemp);
+        
+        int precval = valuesTemp[0];
+        // Riordino i valori, se la dimensione è diversa ottengo un'eccezione
+        // se la differenza tra un valore ed il successivo è diverso da 1 allora ho saltato qualcosa e ritorno false
+        for (int i = 1; i < shufflePositions.length; i++) {
+            if ((valuesTemp[i] - precval) != 1) {
+                return false;
+            }
+            precval = valuesTemp[i];
+        }
+        return true;
+    }
+
 //    /**
 //     *
 //     * @return
 //     */
 //    public int[] DEBUGShufflePositionsDistribution() {
-//        shufflePositions();
+//        shufflePositionsMethod();
 ////        for (int i = 0; i < shufflePositions.length; i++) {
 ////            System.out.println(String.valueOf(shufflePositions[i]));
 ////        }
 //        int[] valuesTemp = Arrays.copyOf(shufflePositions, shufflePositions.length);
 //        return valuesTemp;
 //    }
-
 }
